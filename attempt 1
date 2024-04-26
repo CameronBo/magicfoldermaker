@@ -1,0 +1,38 @@
+import os
+import time
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
+# Define the special folder and destination folders
+special_folder = os.path.join(os.path.expanduser("~"), "Desktop", "SpecialFolder")
+destination_folders = {
+    "Keyword1": "Folder1",
+    "Keyword2": "Folder2",
+    # Add more keywords and corresponding folders as needed
+}
+
+# Define the event handler for file system changes
+class MyHandler(FileSystemEventHandler):
+    def on_created(self, event):
+        if not event.is_directory:
+            filename = event.src_path.split(os.sep)[-1]
+            for keyword, folder in destination_folders.items():
+                if keyword in filename:
+                    destination_folder = os.path.join(special_folder, folder)
+                    if not os.path.exists(destination_folder):
+                        os.makedirs(destination_folder)
+                    os.rename(event.src_path, os.path.join(destination_folder, filename))
+                    print(f"Moved '{filename}' to '{destination_folder}'")
+
+# Start monitoring the special folder
+if __name__ == "__main__":
+    event_handler = MyHandler()
+    observer = Observer()
+    observer.schedule(event_handler, special_folder, recursive=False)
+    observer.start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
